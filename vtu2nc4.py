@@ -66,7 +66,6 @@ class VTU2NC4(object):
         return True
     def writeXDMFOutput(self,ofile):
         reader = []
-        print("test")
         multiblock = vtkMultiBlockDataSet()
         for i, filename in enumerate(self.filenames):
             reader.append(vtkXMLUnstructuredGridReader())
