@@ -45,7 +45,7 @@ class VTU2NC4(object):
         return True
     def writeNC4Output(self,ofile):
         datafile = nc4.Dataset(ofile,'w',format='NETCDF4')
-        datafile.createDimension('pos',None)
+        datafile.createDimension('pos',len(self.data[0]['x']))
         datafile.createDimension('t',len(self.t))
         t = datafile.createVariable('t', np.float32, ('t',))
         x = datafile.createVariable('x', np.float32, ('pos',))
@@ -59,8 +59,8 @@ class VTU2NC4(object):
         for variable in self.data[-1]:
             if not (variable == 'x' or variable == 'y' or variable == 'z'):
                 var[variable] = datafile.createVariable(variable, np.float32, ('pos','t'))
-        for i, timestep in enumerate(self.t):
-            for variable in var:
+        for variable in var:
+            for i, timestep in enumerate(self.t):
                 var[variable][:,i] = self.data[i][variable]
         datafile.close()
         return True
@@ -80,6 +80,7 @@ class VTU2NC4(object):
             raise RuntimeError
         writer.SetFileName(ofile)
         writer.SetInputData(multiblock)
+        writer.SetMeshStaticOverTime(True)
         writer.WriteAllTimeStepsOn()
         writer.Write()
         return True
