@@ -28,11 +28,11 @@ class VTU2NC4(object):
         for i in np.arange(pointdata.GetNumberOfArrays()):
             fieldnames.append(pointdata.GetArrayName(i))
             fielddata = vtk_to_numpy(pointdata.GetArray(fieldnames[-1]))
-            try:
+            if len(fielddata.shape) > 1:
                 field_dim = fielddata.shape[1]
                 for j in np.arange(field_dim):
                     self.data[-1][fieldnames[-1]+'_'+str(j)] = fielddata[:,j]
-            except IndexError:
+            else:
                 field_dim = 1
                 self.data[-1][fieldnames[-1]] = fielddata[:]
         return True
