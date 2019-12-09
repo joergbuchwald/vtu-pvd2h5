@@ -30,8 +30,7 @@ class VTU2NC4(object):
             fielddata = vtk_to_numpy(pointdata.GetArray(fieldnames[-1]))
             if len(fielddata.shape) > 1:
                 field_dim = fielddata.shape[1]
-                for j in np.arange(field_dim):
-                    self.data[-1][fieldnames[-1]+'_'+str(j)] = fielddata[:,j]
+                self.data[-1][fieldnames[-1]] = fielddata[:,:]
             else:
                 field_dim = 1
                 self.data[-1][fieldnames[-1]] = fielddata[:]
@@ -46,6 +45,13 @@ class VTU2NC4(object):
     def writeNC4Output(self,ofile):
         datafile = nc4.Dataset(ofile,'w',format='NETCDF4')
         datafile.createDimension('pos',len(self.data[0]['x']))
+        dimensions=[False,False,False,False,False]
+        for fieldname in self.data[-1]:
+            if len(self.data[-1][fieldname].shape) > 1:
+                dimensions[self.data[-1][fieldname].shape[1]-2] = True
+        for i, dim in enumerate(dimensions):
+            if dim is True:
+                datafile.createDimension('dim'+str(i+2),i+2)
         datafile.createDimension('t',len(self.t))
         t = datafile.createVariable('t', np.float32, ('t',))
         x = datafile.createVariable('x', np.float32, ('pos',))
@@ -58,10 +64,18 @@ class VTU2NC4(object):
         var = {}
         for variable in self.data[-1]:
             if not (variable == 'x' or variable == 'y' or variable == 'z'):
-                var[variable] = datafile.createVariable(variable, np.float32, ('pos','t'))
+                if len(self.data[-1][variable].shape) > 1:
+                    vectorfielddim = 'dim' + str(self.data[-1][variable].shape[1])
+                    var[variable] = datafile.createVariable(variable, np.float32, ('t', 'pos', vectorfielddim))
+                else:
+                    var[variable] = datafile.createVariable(variable, np.float32, ('t', 'pos'))
         for variable in var:
-            for i, timestep in enumerate(self.t):
-                var[variable][:,i] = self.data[i][variable]
+            if len(self.data[-1][variable].shape) > 1:
+                for i, timestep in enumerate(self.t):
+                    var[variable][i,:,:] = self.data[i][variable]
+            else:
+                for i, timestep in enumerate(self.t):
+                    var[variable][i,:] = self.data[i][variable]
         datafile.close()
         return True
     def writeXDMFOutput(self,ofile):
